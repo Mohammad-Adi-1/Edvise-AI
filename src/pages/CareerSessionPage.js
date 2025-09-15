@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import axios from "axios";
+import { HiMenu } from "react-icons/hi"; // Hamburger icon
 
 function CareerSessionPage() {
   const [messages, setMessages] = useState([]);
@@ -8,6 +9,7 @@ function CareerSessionPage() {
   const [activeChat, setActiveChat] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [wordCount, setWordCount] = useState(0); // ✅ Track word count
+  const [sidebarOpen, setSidebarOpen] = useState(false); // Mobile toggle
   const chatEndRef = useRef(null);
 
   useEffect(() => {
@@ -24,7 +26,7 @@ function CareerSessionPage() {
   const handleSend = async (e) => {
     e.preventDefault();
     if (!input.trim()) return;
-    if (wordCount >= 200) return; // ✅ Do not send if over 200 words
+    if (wordCount >= 200) return;
 
     const userMessage = { id: Date.now(), sender: "user", text: input };
     const updatedMessages = [...messages, userMessage];
@@ -47,12 +49,7 @@ function CareerSessionPage() {
       });
 
       const aiText = response.data.reply;
-
-      const aiMessage = {
-        id: Date.now() + 1,
-        sender: "ai",
-        text: aiText,
-      };
+      const aiMessage = { id: Date.now() + 1, sender: "ai", text: aiText };
 
       setMessages((prev) => [...prev, aiMessage]);
 
@@ -79,6 +76,7 @@ function CareerSessionPage() {
   const loadChat = (chat) => {
     setMessages(chat.messages);
     setActiveChat(chat.id);
+    setSidebarOpen(false); // Close sidebar on mobile after selecting chat
   };
 
   const handleInputChange = (e) => {
@@ -91,12 +89,22 @@ function CareerSessionPage() {
   };
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen relative">
+      {/* Hamburger button for mobile */}
+      <button
+        className="absolute top-4 left-4 z-50 md:hidden p-2 rounded bg-gray-800 text-white"
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+      >
+        <HiMenu size={24} />
+      </button>
+
       {/* Sidebar */}
-      <div className="w-64 bg-gray-800 text-white flex flex-col">
-        <div className="p-4 font-bold text-lg border-b border-gray-700">
-          Career AI
-        </div>
+      <div
+        className={`bg-gray-800 text-white flex flex-col fixed md:relative h-full transition-transform transform
+          ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} 
+          md:translate-x-0 w-64 z-40`}
+      >
+        <div className="p-4 font-bold text-lg border-b border-gray-700">Career AI</div>
         <button
           onClick={startNewChat}
           className="m-4 px-4 py-2 bg-indigo-600 rounded hover:bg-indigo-700"
@@ -119,7 +127,7 @@ function CareerSessionPage() {
       </div>
 
       {/* Main chat area */}
-      <div className="flex-1 flex flex-col bg-gray-50">
+      <div className="flex-1 flex flex-col bg-gray-50 md:ml-64">
         <div className={`flex-1 overflow-y-auto p-4 space-y-4 ${isLoading ? 'h-full' : ''}`}>
           {messages.length === 0 && (
             <div className="text-gray-500 text-center mt-8">
@@ -147,7 +155,6 @@ function CareerSessionPage() {
           <div ref={chatEndRef}></div>
         </div>
 
-        {/* Input area – hide when AI is loading */}
         {!isLoading && (
           <form
             onSubmit={handleSend}
